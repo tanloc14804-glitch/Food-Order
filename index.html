@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodOrder – Quản lý đơn món ăn</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#182230;--muted:#667085;--line:#e5e9f0;--primary:#2563eb;--primary-dark:#1d4ed8;--green:#087443;--red:#b42318;--shadow:0 8px 24px rgba(16,24,40,.06)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+header{background:linear-gradient(120deg,#173b80,#2563eb);color:white;padding:28px max(20px,calc((100% - 1180px)/2))}
+header h1{margin:0;font-size:26px}header p{margin:5px 0 0;color:#dbeafe}
+main{max-width:1180px;margin:24px auto;padding:0 18px 40px}
+.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}.tab{border:1px solid var(--line);background:#fff;padding:10px 16px;border-radius:10px;cursor:pointer;font-weight:650;color:#344054}.tab.active{background:#eaf1ff;border-color:#b7ccff;color:#1746a2}
+.panel{display:none}.panel.active{display:block}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:18px}
+h2{font-size:19px;margin:0 0 16px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}label{font-size:13px;font-weight:700;color:#475467}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid #d0d5dd;border-radius:9px;font:inherit;background:white;color:var(--ink);outline:none}
+input:focus,select:focus,textarea:focus{border-color:#84adff;box-shadow:0 0 0 3px #eaf1ff}textarea{resize:vertical;min-height:82px}
+.readonly{background:#f8fafc;color:#475467}.hint{font-size:12px;color:var(--muted)}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.btn{border:0;border-radius:9px;padding:10px 15px;font-weight:700;cursor:pointer;background:#eef2f6;color:#344054}.btn.primary{background:var(--primary);color:white}.btn.primary:hover{background:var(--primary-dark)}.btn.danger{background:#fff0ee;color:var(--red)}.btn.small{padding:6px 10px;font-size:12px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.stat{background:white;border:1px solid var(--line);border-radius:13px;padding:15px}.stat span{display:block;color:var(--muted);font-size:12px}.stat strong{font-size:22px}
+.toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}.toolbar input{max-width:320px}
+.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:720px}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;color:#667085;background:#f8fafc}td{font-size:14px}.price{font-weight:750;white-space:nowrap}.empty{text-align:center;color:var(--muted);padding:28px}.tag{display:inline-block;background:#eff6ff;color:#1d4ed8;border-radius:30px;padding:3px 8px;font-size:12px}
+@media(max-width:680px){header{padding:22px 18px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.summary{grid-template-columns:1fr}.card{padding:15px}header h1{font-size:22px}}
+</style>
+</head>
+<body>
+<header><h1>🍜 FoodOrder</h1><p>Quản lý menu và ghi nhận đơn đặt món nhanh chóng</p></header>
+<main>
+  <nav class="tabs">
+    <button class="tab active" data-tab="orders">🧾 Đặt món / Đơn hàng</button>
+    <button class="tab" data-tab="menu">🍽️ Quản lý Menu</button>
+  </nav>
+
+  <section id="orders" class="panel active">
+    <div class="summary">
+      <div class="stat"><span>Tổng đơn hàng</span><strong id="totalOrders">0</strong></div>
+      <div class="stat"><span>Số món trong Menu</span><strong id="totalMenu">0</strong></div>
+      <div class="stat"><span>Tổng giá trị đơn</span><strong id="totalValue">0 ₫</strong></div>
+    </div>
+    <div class="card">
+      <h2 id="orderFormTitle">Tạo đơn đặt món</h2>
+      <form id="orderForm">
+        <input type="hidden" id="orderId">
+        <div class="form-grid">
+          <div class="field"><label for="customer">Tên khách hàng *</label><input id="customer" required placeholder="Nhập tên khách hàng"></div>
+          <div class="field"><label for="orderDate">Ngày đặt món *</label><input id="orderDate" type="date" required></div>
+          <div class="field full"><label for="dish">Món ăn *</label><select id="dish" required><option value="">-- Chọn món trong Menu --</option></select><span class="hint">Giá tiền và mô tả sẽ tự động lấy từ Menu.</span></div>
+          <div class="field"><label for="price">Giá tiền</label><input id="price" class="readonly" readonly placeholder="Tự động hiển thị"></div>
+          <div class="field"><label for="description">Mô tả món ăn</label><textarea id="description" class="readonly" readonly placeholder="Tự động hiển thị"></textarea></div>
+          <div class="field full"><label for="note">Ghi chú</label><textarea id="note" placeholder="Ví dụ: không hành, ít cay, giao trước 12h..."></textarea></div>
+        </div>
+        <div class="actions"><button class="btn primary" type="submit" id="saveOrder">＋ Lưu đơn hàng</button><button class="btn" type="button" id="resetOrder">Làm mới</button></div>
+      </form>
+    </div>
+    <div class="card">
+      <div class="toolbar"><h2 style="margin:0">Danh sách đơn hàng</h2><input id="orderSearch" placeholder="Tìm theo tên khách / món ăn..."></div>
+      <div class="table-wrap"><table><thead><tr><th>Khách hàng</th><th>Món ăn</th><th>Mô tả</th><th>Giá tiền</th><th>Ngày đặt</th><th>Ghi chú</th><th>Thao tác</th></tr></thead><tbody id="orderRows"></tbody></table></div>
+      <div class="actions"><button class="btn" id="exportOrders">Xuất đơn hàng CSV</button></div>
+    </div>
+  </section>
+
+  <section id="menu" class="panel">
+    <div class="card">
+      <h2 id="menuFormTitle">Thêm món vào Menu</h2>
+      <form id="menuForm">
+        <input type="hidden" id="menuId">
+        <div class="form-grid">
+          <div class="field"><label for="dishName">Tên món ăn *</label><input id="dishName" required placeholder="Ví dụ: Cơm gà xối mỡ"></div>
+          <div class="field"><label for="dishPrice">Giá tiền (VNĐ) *</label><input id="dishPrice" type="number" min="0" step="1000" required placeholder="Ví dụ: 45000"></div>
+          <div class="field full"><label for="dishDescription">Mô tả món ăn</label><textarea id="dishDescription" placeholder="Thành phần, khẩu phần, cách chế biến..."></textarea></div>
+        </div>
+        <div class="actions"><button class="btn primary" type="submit" id="saveMenu">＋ Thêm món</button><button class="btn" type="button" id="resetMenu">Làm mới</button></div>
+      </form>
+    </div>
+    <div class="card">
+      <div class="toolbar"><h2 style="margin:0">Menu hiện tại</h2><input id="menuSearch" placeholder="Tìm tên món ăn..."></div>
+      <div class="table-wrap"><table><thead><tr><th>Tên món ăn</th><th>Mô tả món ăn</th><th>Giá tiền</th><th>Thao tác</th></tr></thead><tbody id="menuRows"></tbody></table></div>
+    </div>
+  </section>
+  <p class="hint">Dữ liệu được lưu trên trình duyệt của thiết bị đang sử dụng (Local Storage). Hãy xuất CSV để sao lưu; dữ liệu không tự đồng bộ giữa các thiết bị.</p>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const money = n => new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',maximumFractionDigits:0}).format(Number(n)||0);
+const today = new Date(); $('orderDate').value = new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
+let menu = JSON.parse(localStorage.getItem('foodorder_menu') || '[]');
+let orders = JSON.parse(localStorage.getItem('foodorder_orders') || '[]');
+const persist = () => {localStorage.setItem('foodorder_menu',JSON.stringify(menu));localStorage.setItem('foodorder_orders',JSON.stringify(orders));};
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab,.panel').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.tab).classList.add('active');}));
+function renderMenu(){
+  const q=$('menuSearch').value.toLowerCase();
+  $('menuRows').innerHTML=menu.filter(m=>m.name.toLowerCase().includes(q)).map(m=>`<tr><td><b>${esc(m.name)}</b></td><td>${esc(m.description)||'—'}</td><td class="price">${money(m.price)}</td><td><button class="btn small" onclick="editMenu('${m.id}')">Sửa</button> <button class="btn small danger" onclick="deleteMenu('${m.id}')">Xóa</button></td></tr>`).join('')||'<tr><td colspan="4" class="empty">Chưa có món ăn. Hãy thêm món vào Menu.</td></tr>';
+  const current=$('dish').value;
+  $('dish').innerHTML='<option value="">-- Chọn món trong Menu --</option>'+menu.map(m=>`<option value="${m.id}">${esc(m.name)} – ${money(m.price)}</option>`).join('');
+  if(menu.some(m=>m.id===current)) $('dish').value=current;
+  updateDishInfo(); $('totalMenu').textContent=menu.length;
+}
+function updateDishInfo(){const m=menu.find(x=>x.id===$('dish').value);$('price').value=m?money(m.price):'';$('description').value=m?m.description:'';}
+$('dish').addEventListener('change',updateDishInfo);
+$('menuForm').addEventListener('submit',e=>{e.preventDefault();const id=$('menuId').value;const item={id:id||crypto.randomUUID(),name:$('dishName').value.trim(),description:$('dishDescription').value.trim(),price:Number($('dishPrice').value)};if(menu.some(m=>m.name.toLowerCase()===item.name.toLowerCase()&&m.id!==id)){alert('Tên món này đã có trong Menu.');return;}if(id)menu=menu.map(m=>m.id===id?item:m);else menu.push(item);persist();resetMenu();renderMenu();renderOrders();});
+function resetMenu(){$('menuForm').reset();$('menuId').value='';$('menuFormTitle').textContent='Thêm món vào Menu';$('saveMenu').textContent='＋ Thêm món';}
+$('resetMenu').onclick=resetMenu;
+window.editMenu=id=>{const m=menu.find(x=>x.id===id);if(!m)return;$('menuId').value=m.id;$('dishName').value=m.name;$('dishDescription').value=m.description;$('dishPrice').value=m.price;$('menuFormTitle').textContent='Chỉnh sửa món ăn';$('saveMenu').textContent='Lưu thay đổi';window.scrollTo({top:0,behavior:'smooth'});};
+window.deleteMenu=id=>{if(!confirm('Xóa món này khỏi Menu? Các đơn cũ vẫn được giữ nguyên.'))return;menu=menu.filter(m=>m.id!==id);persist();renderMenu();renderOrders();};
+$('orderForm').addEventListener('submit',e=>{e.preventDefault();const m=menu.find(x=>x.id===$('dish').value);if(!m){alert('Vui lòng chọn món ăn trong Menu.');return;}const id=$('orderId').value;const item={id:id||crypto.randomUUID(),customer:$('customer').value.trim(),dishId:m.id,dishName:m.name,description:m.description,price:m.price,date:$('orderDate').value,note:$('note').value.trim()};if(id)orders=orders.map(o=>o.id===id?item:o);else orders.unshift(item);persist();resetOrder();renderOrders();});
+function resetOrder(){$('orderForm').reset();$('orderId').value='';$('orderDate').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);$('orderFormTitle').textContent='Tạo đơn đặt món';$('saveOrder').textContent='＋ Lưu đơn hàng';updateDishInfo();}
+$('resetOrder').onclick=resetOrder;
+function renderOrders(){const q=$('orderSearch').value.toLowerCase();const shown=orders.filter(o=>(o.customer+' '+o.dishName).toLowerCase().includes(q));$('orderRows').innerHTML=shown.map(o=>`<tr><td><b>${esc(o.customer)}</b></td><td>${esc(o.dishName)}</td><td>${esc(o.description)||'—'}</td><td class="price">${money(o.price)}</td><td>${esc(o.date)}</td><td>${esc(o.note)||'—'}</td><td><button class="btn small" onclick="editOrder('${o.id}')">Sửa</button> <button class="btn small danger" onclick="deleteOrder('${o.id}')">Xóa</button></td></tr>`).join('')||'<tr><td colspan="7" class="empty">Chưa có đơn hàng phù hợp.</td></tr>';$('totalOrders').textContent=orders.length;$('totalValue').textContent=money(orders.reduce((s,o)=>s+Number(o.price||0),0));}
+window.editOrder=id=>{const o=orders.find(x=>x.id===id);if(!o)return;$('orderId').value=o.id;$('customer').value=o.customer;$('dish').value=menu.some(m=>m.id===o.dishId)?o.dishId:'';$('orderDate').value=o.date;$('note').value=o.note;updateDishInfo();if(!$('dish').value){$('price').value=money(o.price);$('description').value=o.description;} $('orderFormTitle').textContent='Chỉnh sửa đơn hàng';$('saveOrder').textContent='Lưu thay đổi';document.querySelector('[data-tab="orders"]').click();window.scrollTo({top:0,behavior:'smooth'});};
+window.deleteOrder=id=>{if(!confirm('Bạn có chắc muốn xóa đơn hàng này?'))return;orders=orders.filter(o=>o.id!==id);persist();renderOrders();};
+$('menuSearch').addEventListener('input',renderMenu);$('orderSearch').addEventListener('input',renderOrders);
+$('exportOrders').onclick=()=>{if(!orders.length){alert('Chưa có đơn hàng để xuất.');return;}const rows=[['Tên khách hàng','Món ăn','Mô tả','Giá tiền','Ngày đặt món','Ghi chú'],...orders.map(o=>[o.customer,o.dishName,o.description,o.price,o.date,o.note])];const csv='\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='foodorder-don-hang.csv';a.click();URL.revokeObjectURL(a.href);};
+renderMenu();renderOrders();
+</script>
+</body></html>
